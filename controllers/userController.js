@@ -1,6 +1,8 @@
 // /controllers/userController.js
 const User = require('../models/userModel');
 const request = require('request');
+const AES256 = require('aes-everywhere'); 
+require('dotenv').config();
 
 exports.registerUser = async (req, res) => {
   try {
@@ -37,10 +39,9 @@ exports.registerUser = async (req, res) => {
     // Make the API request
     const options = {
       method: 'POST',
-      url: 'https://issuecards.api.bridgecard.co/v1/issuing/sandbox/cardholder/register_cardholder_synchronously',
+      url: `${process.env.card_holder_reg}`,
       headers: {
-        'token': 'Bearer at_test_25148e15011c888a9b7b81957b21b72f86bedc9ae66983b658089eecb1984254bf88d4811e180a6f89e55dd6ff74fb75201bf1cade6f2136bedb949f17eccf52f3853c1c48a394b02f613c44754e1468f860441e25387717f968728443faf190ad86886663e847e979067588c774618502000e431c79f17763b1f2e19bfd4624a0b15ee34c223d687be10a03903478e175f87d2b72810436463f43d7a5c015aae60a0b214a1ba1066166150d67a00ff05dcf49596bcb4083c0d4274e6dd72933f9dfa533d67bbf3a305eacaaa6ba7af2ae730e507e6c7e742010836bd8992bbd937821dbc7390678929a01a38bd77733af52483f705234ffb5ab41c45e9c23c2',
-        'Content-Type': 'application/json'
+        'token': process.env.API_TOKEN
       },
       body: JSON.stringify(requestBody)
     };
@@ -68,3 +69,71 @@ exports.registerUser = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
+
+ 
+exports.getCardholderDetails = (req, res) => {
+    const { cardholder_id } = req.params;
+  
+    const options = {
+      method: 'GET',
+      url: `${process.env.get_card_holder_API_URL}?cardholder_id=${cardholder_id}`,
+      headers: {
+        'token': process.env.API_TOKEN
+      }
+    };
+  
+    request(options, function (error, response) {
+      if (error) {
+        return res.status(500).json({ error: 'Error fetching cardholder details' });
+      }
+      
+      const body = JSON.parse(response.body);
+      
+      if (body.status === 'success') {
+        return res.status(200).json(body.data);
+      } else {
+        return res.status(400).json({ message: body.message });
+      }
+    });
+  };
+
+
+  exports.fundWallet = (req, res) => {
+    const { amount } = req.body;
+  
+    // Validate the amount
+    if (!amount || isNaN(amount) || amount <= 0) {
+      return res.status(400).json({ message: 'Invalid amount' });
+    }
+  
+    const options = {
+      'method': 'PATCH',
+      'url': `${process.env.fund_walet_url}`, 
+      'headers': {
+        'token': `${process.env.API_TOKEN}`, 
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        "amount": amount
+      })
+    };
+  
+    // Sending the request to the Bridgecard API
+    request(options, function (error, response) {
+      if (error) {
+        return res.status(500).json({ message: 'Error funding wallet', error: error.message });
+      }
+  
+      const responseBody = JSON.parse(response.body);
+  
+      // Check if the request was successful
+      if (responseBody.status === 'success') {
+        return res.status(200).json({ message: responseBody.message, data: responseBody.data });
+      } else {
+        return res.status(400).json({ message: responseBody.message });
+      }
+    });
+  };
+
+
+ 

@@ -19,7 +19,10 @@ const userSchema = new mongoose.Schema({
     bvn: { type: String, required: true },
     selfie_image: String
   },
-  cardholder_id: { type: String } // Store cardholder ID from response
+  cardholder_id: { type: String }, // Store cardholder ID from response
+  card_id: { type: String }, // Store card ID from card creation response
 });
 
+
+// available_balance 
 module.exports = mongoose.model('User', userSchema);
